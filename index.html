@@ -58,9 +58,9 @@ function render(){
  window.scrollTo(0,0);
 }
 function choose(k){if(answered)return; selected=k;answered=true;render()}
-function next(){if(side===0)side=1;else if(qi<Q.length-1){qi++;side=0;answered=false;selected=null} clearInk();render()}
-function prev(){if(side===1)side=0;else if(qi>0){qi--;side=1;answered=true;selected=Q[qi].g} clearInk();render()}
-function restart(){qi=0;side=0;answered=false;selected=null;clearInk();render()}
+function next(){if(side===0)side=1;else if(qi<Q.length-1){qi++;side=0;answered=false;selected=null} render()}
+function prev(){if(side===1)side=0;else if(qi>0){qi--;side=1;answered=true;selected=Q[qi].g} render()}
+function restart(){qi=0;side=0;answered=false;selected=null;render()}
 
 // Camada de escrita sem barra visível: tecla E liga/desliga; ESC desliga.
 const canvas=document.getElementById('ink'), ctx=canvas.getContext('2d');
@@ -71,19 +71,32 @@ function resizeInk(){
  canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=3;ctx.strokeStyle='#d62828';
 }
-function clearInk(){ctx.clearRect(0,0,canvas.width,canvas.height)}
+function saveInk(){
+ try{ localStorage.setItem('profMoreiraInk', canvas.toDataURL('image/png')); }catch(e){}
+}
+function restoreInk(){
+ const saved=localStorage.getItem('profMoreiraInk');
+ if(!saved)return;
+ const img=new Image();
+ img.onload=()=>ctx.drawImage(img,0,0,innerWidth,innerHeight);
+ img.src=saved;
+}
+function clearInk(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ localStorage.removeItem('profMoreiraInk');
+}
 function inkOn(){document.body.classList.add('inking')}
 function inkOff(){document.body.classList.remove('inking');drawing=false;last=null}
 function toggleInk(){document.body.classList.contains('inking')?inkOff():inkOn()}
 window.addEventListener('keydown',e=>{
  if((e.key==='e'||e.key==='E')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();toggleInk()}
- if(e.key==='Escape')inkOff();
+ if(e.key==='Escape')inkOff(); if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();clearInk();}
 });
 canvas.addEventListener('pointerdown',e=>{drawing=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)})
 canvas.addEventListener('pointermove',e=>{if(!drawing)return;ctx.beginPath();ctx.moveTo(...last);ctx.lineTo(e.clientX,e.clientY);ctx.stroke();last=[e.clientX,e.clientY]})
-canvas.addEventListener('pointerup',()=>{drawing=false;last=null})
-canvas.addEventListener('pointercancel',()=>{drawing=false;last=null})
-window.addEventListener('resize',()=>{resizeInk();clearInk()})
-resizeInk();render();
+canvas.addEventListener('pointerup',()=>{drawing=false;last=null;saveInk()})
+canvas.addEventListener('pointercancel',()=>{drawing=false;last=null;saveInk()})
+window.addEventListener('resize',()=>{resizeInk();restoreInk()})
+resizeInk();restoreInk();render();
 </script>
 </body></html>
