@@ -50,7 +50,7 @@ function render(){
  document.getElementById('count').textContent=(qi+1)+' / '+Q.length;
  if(side===0){
    let a=Object.entries(x.alts).map(([k,v])=>`<button class="alt ${answered?(k===x.g?'correct':(k===selected&&k!==x.g?'wrong':'')):''}" ${answered?'disabled':''} onclick="choose('${k}')"><b>${k})</b> ${esc(v)}</button>`).join('');
-   root.innerHTML=`<div class="card"><div class="meta">${esc(x.banca)} • Questão original nº ${x.n}</div><h2>QUESTÃO</h2><div class="qtext">${esc(x.q)}</div>${a}${answered?`<div class="feedback ${selected===x.g?'ok':'no'}">${selected===x.g?'✓ Resposta correta!':'✗ Resposta incorreta. Gabarito: '+x.g}<br>Avance para ver a explicação completa.</div>`:''}<div class="tip">Tecla E: ativa/desativa a escrita sobre a tela. ESC também sai do modo escrita.</div></div>`;
+   root.innerHTML=`<div class="card"><div class="meta">${esc(x.banca)} • Questão original nº ${x.n}</div><h2>QUESTÃO</h2><div class="qtext">${esc(x.q)}</div>${a}${answered?`<div class="feedback ${selected===x.g?'ok':'no'}">${selected===x.g?'✓ Resposta correta!':'✗ Resposta incorreta. Gabarito: '+x.g}<br>Avance para ver a explicação completa.</div>`:''}<div class="tip">Tecla E: ativa/desativa a escrita. A anotação fica nesta tela e é limpa ao avançar ou voltar.</div></div>`;
  } else {
    let wrong=Object.entries(x.alts).filter(([k])=>k!==x.g).map(([k,v])=>`<p><b>${k}) ERRADA:</b> ${esc(v)}</p>`).join('');
    root.innerHTML=`<div class="card"><div class="meta">${esc(x.banca)} • Questão original nº ${x.n}</div><h2>RESOLUÇÃO COMENTADA</h2><div class="answer">✓ Gabarito: ${x.g}) ${esc(x.alts[x.g])}</div><div class="explain"><b>Explicação:</b><br>${esc(x.exp)}<hr><b>Por que as demais estão erradas?</b>${wrong}</div></div>`;
@@ -58,9 +58,9 @@ function render(){
  window.scrollTo(0,0);
 }
 function choose(k){if(answered)return; selected=k;answered=true;render()}
-function next(){if(side===0)side=1;else if(qi<Q.length-1){qi++;side=0;answered=false;selected=null} render()}
-function prev(){if(side===1)side=0;else if(qi>0){qi--;side=1;answered=true;selected=Q[qi].g} render()}
-function restart(){qi=0;side=0;answered=false;selected=null;render()}
+function next(){clearInk();if(side===0)side=1;else if(qi<Q.length-1){qi++;side=0;answered=false;selected=null} render()}
+function prev(){clearInk();if(side===1)side=0;else if(qi>0){qi--;side=1;answered=true;selected=Q[qi].g} render()}
+function restart(){clearInk();qi=0;side=0;answered=false;selected=null;render()}
 
 // Camada de escrita sem barra visível: tecla E liga/desliga; ESC desliga.
 const canvas=document.getElementById('ink'), ctx=canvas.getContext('2d');
@@ -71,19 +71,8 @@ function resizeInk(){
  canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=3;ctx.strokeStyle='#d62828';
 }
-function saveInk(){
- try{ localStorage.setItem('profMoreiraInk', canvas.toDataURL('image/png')); }catch(e){}
-}
-function restoreInk(){
- const saved=localStorage.getItem('profMoreiraInk');
- if(!saved)return;
- const img=new Image();
- img.onload=()=>ctx.drawImage(img,0,0,innerWidth,innerHeight);
- img.src=saved;
-}
 function clearInk(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
- localStorage.removeItem('profMoreiraInk');
 }
 function inkOn(){document.body.classList.add('inking')}
 function inkOff(){document.body.classList.remove('inking');drawing=false;last=null}
@@ -94,9 +83,9 @@ window.addEventListener('keydown',e=>{
 });
 canvas.addEventListener('pointerdown',e=>{drawing=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)})
 canvas.addEventListener('pointermove',e=>{if(!drawing)return;ctx.beginPath();ctx.moveTo(...last);ctx.lineTo(e.clientX,e.clientY);ctx.stroke();last=[e.clientX,e.clientY]})
-canvas.addEventListener('pointerup',()=>{drawing=false;last=null;saveInk()})
-canvas.addEventListener('pointercancel',()=>{drawing=false;last=null;saveInk()})
-window.addEventListener('resize',()=>{resizeInk();restoreInk()})
-resizeInk();restoreInk();render();
+canvas.addEventListener('pointerup',()=>{drawing=false;last=null})
+canvas.addEventListener('pointercancel',()=>{drawing=false;last=null})
+window.addEventListener('resize',()=>{resizeInk()})
+resizeInk();render();
 </script>
 </body></html>
